@@ -1,0 +1,74 @@
+---
+# tasks file for lshake.libvirtvm
+
+- name: include delete tasks for each vm if state is destroyed
+  include_tasks: delete_libvirt.yml
+  with_items: "{{ machines | default([]) }}"
+  loop_control:
+    label: "{{ this_vm.name }}"
+    loop_var: this_vm
+  when: this_vm.state == 'destroyed'
+
+- name: include the create boot disk tasks for each vm
+  include_tasks: create_libvirt_boot_disks.yml
+  with_items: "{{ machines | default([]) }}"
+  loop_control:
+    label: "{{ this_vm.name }}"
+    loop_var: this_vm
+  when: this_vm.state != 'destroyed'
+
+- name: include the create vm tasks
+  include_tasks: create_libvirt_vm.yml
+
+- name: add new hosts to groups
+  add_host:
+    hostname: "{{ item.item.name }}"
+    ansible_ssh_host: "{{ item.item.nics.0.ipaddress }}"
+    satellite_hostgroup: "{{ item.item.satellite_hostgroup | default(omit) }}"
+    state: "{{ item.item.state }}"
+    groups: "{{ item.item.groups }}"
+  with_items: "{{ hostvars | json_query('*.libvirtvm_machines.results')  }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when:  (item.item.state == 'running' or item.item.state =='shutdown')
+  changed_when: false
+
+- name: add running hosts to group
+  add_host:
+    hostname: "{{ item.item.name }}"
+    ansible_ssh_host: "{{ item.item.nics.0.ipaddress }}"
+    state: "{{ item.item.state }}"
+    groups: "libvirt_running"
+  with_items: "{{ hostvars | json_query('*.libvirtvm_machines.results')  }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when:  item.item.state == 'running'
+  changed_when: false
+
+- name: add destroyed hosts to destoryed group
+  add_host:
+    hostname: "{{ item.name }}"
+    hostname_fqdn: "{{ item.name }}.{{ item.nics.0.domain | default('lab.shakey.org') }}"
+    state: "{{ item.state }}"
+    groups:
+      - libvirt_destroyed
+      - shakey_towers
+  with_items: "{{ hostvars | json_query('*.machines')  }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.state == 'destroyed'
+  changed_when: false
+
+- name: add new ubuntu to libvirt_ubuntu group
+  add_host:
+    hostname: "{{ item.item.name }}"
+    ansible_python_interpreter: "/usr/bin/python2.7"
+    groups:
+      - libvirt_ubuntu
+  with_items: "{{ hostvars | json_query('*.libvirtvm_machines.results')  }}"
+  loop_control:
+    label: "{{item.item.name}}"
+  when:
+    - (item.item.state == 'running' or item.item.state =='shutdown')
+    - item.item['os_type'] == "ubuntu16.04"
+  changed_when: false

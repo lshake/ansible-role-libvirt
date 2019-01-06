@@ -1,0 +1,46 @@
+- name: run virt-builder for for {{ this_vm.name }}
+  command: >
+           virt-builder --quiet
+           --format {{ this_vm.boot_disk.name.split('.') | last }} {{ this_vm.distribution }}
+           -o {{ this_vm.boot_disk.path }}/{{ this_vm.boot_disk.name }}
+           --size {{ this_vm.boot_disk.size }}
+           --root-password password:{{ default_root_password }}
+           --ssh-inject root:string:'{{ ssh_key }}'
+           --hostname {{ this_vm.name }}.{{ this_vm.domain | default('lab.shakey.org') }}
+           --selinux-relabel
+           {{ this_vm.firstboot_command | default() }}
+           {{ this_vm.firstboot_install | default() }}
+           {{ this_vm.uninstall | default() }}
+           {{ this_vm.edit | default() }}
+           {{ this_vm.run_command | default() }}
+  environment:
+    LIBGUESTFS_BACKEND: direct
+  args:
+    creates: "{{ this_vm.boot_disk.path }}/{{ this_vm.boot_disk.name }}"
+  register: libvirtvm_virtbuilder
+
+- name: include the create extra disks tasks
+  include_tasks: create_libvirt_extra_disks.yml
+  with_items: "{{ this_vm.disks }}"
+  loop_control:
+    label: "{{ this_disk.name }}"
+    loop_var: this_disk
+  when: this_vm.disks is defined
+
+- name: include the static ip tasks for rhel vm
+  include_tasks: create_libvirt_ipconfig_rhel.yml
+  with_items: "{{ this_vm.nics }}"
+  loop_control:
+    loop_var: this_nic
+    label: "{{ this_nic.ipaddress }}"
+  when:
+    - this_vm.nics is defined
+    - libvirtvm_virtbuilder is changed
+    - this_vm.os_type == "rhel7"
+
+- name: include the static ip tasks for ubuntu vm
+  include_tasks: create_libvirt_ipconfig_ubuntu.yml
+  when:
+    - this_vm.nics is defined
+    - libvirtvm_virtbuilder is changed
+    - this_vm.os_type == "ubuntu16.04"

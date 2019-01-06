@@ -1,0 +1,32 @@
+- name: create vm
+  virt:
+      name: "{{ item.name }}"
+      command: define
+      xml: "{{ lookup('template', 'libvirt.xml.j2') }}"
+  with_items: "{{ machines | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: (item.state == 'running' or item.state == 'shutdown')
+  register: libvirtvm_machines
+
+- name: set vm state
+  virt:
+    name: "{{ item.item.name }}"
+    state: "{{ item.item.state }}"
+  with_items: "{{ libvirtvm_machines.results }}"
+  loop_control:
+    label: "{{ item.item.name }} - {{ item.item.state }}"
+  when: (item.item.state == 'running' or item.item.state == 'shutdown')
+
+- name: wait for server to boot
+  wait_for:
+    host: "{{ item.item.nics.0.ipaddress }}"
+    port: 22
+    delay: 1
+    timeout: 240
+    search_regex: OpenSSH
+  become: false
+  with_items: "{{ libvirtvm_machines.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when: item.item.state == 'running'

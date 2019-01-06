@@ -1,0 +1,16 @@
+auto lo
+iface lo inet loopback
+
+{% for nic in this_vm.nics | default([]) %}
+auto {{ nic.device | default('ens3') }}
+iface {{ nic.device | default('ens3') }} inet static
+        address {{ nic.ipaddress }}
+        network {{ nic.network | default('192.168.21.0') }}
+        netmask {{ nic.netmask | default('255.255.255.0') }}
+        broadcast {{ nic.broadcast | default('192.168.21.255') }}
+        gateway {{ nic.gateway | default('192.168.21.1') }}
+        dns-nameservers {{ nic.dns1 | default('192.168.13.10') }} {{ nic.dns2 | default('192.168.12.22') }}
+        dns-search "{{ nic.dns_search | default('home.shakey.org lab.shakey.org dhcp.shakey.org cloud.shakey.org') }}"
+
+iface {{ nic.device | default('ens3') }} inet6 auto
+{% endfor %}

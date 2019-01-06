@@ -1,0 +1,28 @@
+- name: sort out the static ip config for {{ this_vm }}
+  block:
+    - name: create a tmp dir
+      tempfile:
+        state: directory
+        prefix: vms
+      register: libvirtvm_tmpfile
+      changed_when: false
+
+    - name: copy rhel network files to hypervisor
+      template:
+        src: ifcfg-eth0.j2
+        dest: "{{ libvirtvm_tmpfile.path }}/ifcfg-{{ this_nic.device | default('eth0') }}"
+
+    - name: set static ip in rhel {{ this_vm.name }} {{ this_nic.ipaddress }}
+      command: >
+                virt-copy-in -a {{ this_vm.boot_disk.path }}/{{ this_vm.boot_disk.name }}
+                {{ libvirtvm_tmpfile.path }}//ifcfg-{{ this_nic.device | default('eth0') }}
+                /etc/sysconfig/network-scripts
+      environment:
+        LIBGUESTFS_BACKEND: direct
+
+  always:
+    - name: remove tmp dir
+      file:
+        state: absent
+        path: "{{ libvirtvm_tmpfile.path }}"
+

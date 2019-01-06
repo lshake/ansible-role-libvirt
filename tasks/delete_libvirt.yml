@@ -1,0 +1,27 @@
+- name: get current list of VMs
+  virt:
+    command: "list_vms"
+  register: libvirtvm_vms
+
+- name: destory {{ this_vm.name }}
+  virt:
+    name: "{{ this_vm.name }}"
+    state: shutdown
+  when: this_vm.name in libvirtvm_vms.list_vms
+
+- name: undefine {{ this_vm.name }}
+  virt:
+    name: "{{ this_vm.name }}"
+    command: undefine
+  when: this_vm.name in libvirtvm_vms.list_vms
+
+- name: delete boot disk {{ this_vm.name }}
+  file:
+    state: absent
+    path: "{{ this_vm.boot_disk.path }}/{{ this_vm.boot_disk.name }}"
+
+- name: delete extra disks {{ this_vm.name }}
+  file:
+    state: absent
+    path: "{{ item.path }}/{{ item.name }}"
+  with_items: "{{ this_vm.disks | default([]) }}"

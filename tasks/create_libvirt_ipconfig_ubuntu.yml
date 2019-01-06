@@ -1,0 +1,28 @@
+- name: sort out the static ip config for {{ this_vm.name }}
+  block:
+    - name: create a tmp dir
+      tempfile:
+        state: directory
+        prefix: vms
+      register: libvirtvm_tmpfile
+      changed_when: false
+
+    - name: copy ubuntu network files to hypervisor for {{ this_vm.name }}
+      template:
+        src: templates/interfaces.j2
+        dest: "{{ libvirtvm_tmpfile.path }}/interfaces"
+
+    - name: set static ip in ubuntu vm {{ this_vm.name }}
+      command: >
+                virt-copy-in -a {{ this_vm.boot_disk.path }}/{{ this_vm.boot_disk.name }}
+                {{ libvirtvm_tmpfile.path }}/interfaces
+                /etc/network
+      environment:
+        LIBGUESTFS_BACKEND: direct
+
+  always:
+    - name: remove tmp dir
+      file:
+        state: absent
+        path: "{{ libvirtvm_tmpfile.path }}"
+

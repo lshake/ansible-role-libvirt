@@ -1,0 +1,11 @@
+- name: create data disks {{ this_vm.name }} {{ this_disk.path }} {{ this_disk.name }}
+  command: >
+           qemu-img create
+           -f {{ this_disk.name.split('.') | last }}
+           {{ this_disk.path }}/{{ this_disk.name }}
+           {{ this_disk.size }}
+  loop_control:
+    label: "{{ this_disk.name }}"
+  args:
+    creates: "{{ this_disk.path }}/{{ this_disk.name }}"
+
