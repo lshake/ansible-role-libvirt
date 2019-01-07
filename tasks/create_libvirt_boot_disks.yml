@@ -8,11 +8,7 @@
            --ssh-inject root:string:'{{ ssh_key }}'
            --hostname {{ this_vm.name }}.{{ this_vm.domain | default('lab.shakey.org') }}
            --selinux-relabel
-           {{ this_vm.firstboot_command | default() }}
-           {{ this_vm.firstboot_install | default() }}
-           {{ this_vm.uninstall | default() }}
-           {{ this_vm.edit | default() }}
-           {{ this_vm.run_command | default() }}
+           {{ this_vm.virt_builder_extra_options | default() }}
   environment:
     LIBGUESTFS_BACKEND: direct
   args:
