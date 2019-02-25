@@ -25,6 +25,7 @@
     hostname: "{{ item.item.name }}"
     ansible_ssh_host: "{{ item.item.nics.0.ipaddress }}"
     satellite_hostgroup: "{{ item.item.satellite_hostgroup | default(omit) }}"
+    satellite_activation_key: "{{ item.item.satellite_activation_key | default(omit) }}"
     state: "{{ item.item.state }}"
     groups: "{{ item.item.groups }}"
   with_items: "{{ hostvars | json_query('*.libvirtvm_machines.results')  }}"

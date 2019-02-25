@@ -58,7 +58,7 @@ machines:
 ## Basic Parameters
 
 Item | Purpose
-----   -------
+---- | -------
 ssh_key | The ssh key to inject for the root user.
 default_root_password | The password to set for the root user (use ansible-vault to secure).
 
