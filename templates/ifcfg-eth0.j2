@@ -22,7 +22,7 @@ GATEWAY={{ this_nic.gateway }}
 DNS1={{ this_nic.dns1 }}
 {% endif %}
 {% if this_nic.dns2 is defined %}
-DNS1={{ this_nic.dns2 }}
+DNS2={{ this_nic.dns2 }}
 {% endif %}
 {% if this_nic.dns_search is defined %}
 DOMAIN="{{ this_nic.dns_search }}"
