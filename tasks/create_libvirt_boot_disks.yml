@@ -32,7 +32,7 @@
   when:
     - this_vm.nics is defined
     - libvirtvm_virtbuilder is changed
-    - this_vm.os_type == "rhel7"
+    - this_vm.os_type == "rhel7" or this_vm.os_type == "rhel8"
 
 - name: include the static ip tasks for ubuntu vm
   include_tasks: create_libvirt_ipconfig_ubuntu.yml
