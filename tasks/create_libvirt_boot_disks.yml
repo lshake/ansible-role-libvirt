@@ -1,14 +1,13 @@
 - name: run virt-builder for for {{ this_vm.name }}
   command: >
-           virt-builder --quiet
-           --format {{ this_vm.boot_disk.name.split('.') | last }} {{ this_vm.distribution }}
-           -o {{ this_vm.boot_disk.path }}/{{ this_vm.boot_disk.name }}
-           --size {{ this_vm.boot_disk.size }}
-           --root-password password:{{ default_root_password }}
-           --ssh-inject root:string:'{{ ssh_key }}'
-           --hostname {{ this_vm.name }}.{{ this_vm.domain | default('lab.shakey.org') }}
-           --selinux-relabel
-           {{ this_vm.virt_builder_extra_options | default() }}
+    virt-builder --quiet
+    --format {{ this_vm.boot_disk.name.split('.') | last }} {{ this_vm.distribution }}
+    -o {{ this_vm.boot_disk.path }}/{{ this_vm.boot_disk.name }}
+    --size {{ this_vm.boot_disk.size }}
+    --root-password password:{{ default_root_password }}
+    --ssh-inject root:string:'{{ ssh_key }}'
+    --hostname {{ this_vm.name }}.{{ this_vm.domain | default('lab.shakey.org') }}
+    {{ this_vm.virt_builder_extra_options | default() }}
   environment:
     LIBGUESTFS_BACKEND: direct
   args:
@@ -40,3 +39,16 @@
     - this_vm.nics is defined
     - libvirtvm_virtbuilder is changed
     - this_vm.os_type == "ubuntu16.04"
+
+- name: run selinux relabel
+  command: >
+    virt-customize --quiet
+    --format {{ this_vm.boot_disk.name.split('.') | last }}
+    -a {{ this_vm.boot_disk.path }}/{{ this_vm.boot_disk.name }}
+    --no-network
+    --selinux-relabel
+  environment:
+    LIBGUESTFS_BACKEND: direct
+  when:
+    - libvirtvm_virtbuilder is changed
+    - this_vm.os_type == "rhel7" or this_vm.os_type == "rhel8"

@@ -1,6 +1,5 @@
 - name: create vm
   virt:
-      name: "{{ item.name }}"
       command: define
       xml: "{{ lookup('template', 'libvirt.xml.j2') }}"
   with_items: "{{ machines | default([]) }}"
